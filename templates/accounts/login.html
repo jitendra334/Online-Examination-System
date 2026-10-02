@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login - Online Examination System{% endblock %}
+
+{% block unauth_content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center bg-light py-5 px-3">
+    <div class="container" style="max-width: 960px;">
+        <div class="card border-0 shadow-xl overflow-hidden rounded-4">
+            <div class="row g-0">
+                <!-- Left Hero Brand Column -->
+                <div class="col-lg-6 bg-gradient-primary text-white p-4 p-md-5 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-4">
+                            <div class="stat-icon bg-white text-primary" style="width: 44px; height: 44px; border-radius: 12px;">
+                                <i class="bi bi-mortarboard-fill fs-4"></i>
+                            </div>
+                            <span class="brand-font fs-3 fw-bold">ExamPortal</span>
+                        </div>
+                        <h2 class="display-6 fw-bold text-white mb-3">Online Examination System</h2>
+                        <p class="text-white text-opacity-75 lead fs-6 mb-4">
+                            Computerized academic testing platform with automated timer validation, intelligent question palettes, and instant scorecard analytics.
+                        </p>
+                    </div>
+
+                    <!-- System Feature Highlights -->
+                    <div class="d-flex flex-column gap-3 mt-4 pt-3 border-top border-white border-opacity-25">
+                        <div class="d-flex align-items-center gap-2 text-white text-opacity-90 small">
+                            <i class="bi bi-shield-lock-fill text-warning fs-5"></i>
+                            <span>Secure Role-Based Authentication</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 text-white text-opacity-90 small">
+                            <i class="bi bi-stopwatch-fill text-info fs-5"></i>
+                            <span>Live Proctored Countdown & Auto-Submit</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 text-white text-opacity-90 small">
+                            <i class="bi bi-award-fill text-success fs-5"></i>
+                            <span>Instant Scorecards & PDF Certificates</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Form Column -->
+                <div class="col-lg-6 p-4 p-md-5 bg-white d-flex flex-column justify-content-center">
+                    <div class="mb-4">
+                        <h3 class="fw-bold text-dark mb-1">Sign In to Your Portal</h3>
+                        <p class="text-muted">Enter your university credentials to continue</p>
+                    </div>
+
+                    <form method="post" action="{% url 'accounts:login' %}" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2 mb-3">
+                            {% for error in form.non_field_errors %}
+                            <small class="d-block"><i class="bi bi-exclamation-circle me-1"></i> {{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label fw-semibold text-dark small">Username / Student ID</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                                {{ form.username }}
+                            </div>
+                            {% if form.username.errors %}
+                            <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="id_password" class="form-label fw-semibold text-dark small">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                                {{ form.password }}
+                            </div>
+                            {% if form.password.errors %}
+                            <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-3 fw-bold py-2.5 shadow-sm">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Access Examination Portal
+                            </button>
+                        </div>
+
+                        <div class="text-center pt-3 border-top">
+                            <p class="text-muted small mb-2">New student or faculty member?</p>
+                            <div class="d-flex justify-content-center gap-3">
+                                <a href="{% url 'accounts:register_student' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                    <i class="bi bi-person-plus me-1"></i> Student Registration
+                                </a>
+                                <a href="{% url 'accounts:register_teacher' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                    <i class="bi bi-person-badge me-1"></i> Faculty Signup
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

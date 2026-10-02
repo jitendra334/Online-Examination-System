@@ -1,0 +1,124 @@
+{% load static %}
+<aside class="sidebar">
+    <div class="sidebar-header d-flex align-items-center justify-content-between">
+        <a href="{% url 'dashboard:index' %}" class="d-flex align-items-center gap-2 text-decoration-none text-white">
+            <div class="stat-icon bg-primary text-white" style="width: 38px; height: 38px; border-radius: 10px;">
+                <i class="bi bi-mortarboard-fill fs-5"></i>
+            </div>
+            <div>
+                <div class="brand-font fs-5 text-white lh-1">ExamPortal</div>
+                <small class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.05em;">ONLINE SYSTEM</small>
+            </div>
+        </a>
+    </div>
+
+    <ul class="sidebar-menu">
+        <li class="sidebar-label">Main Navigation</li>
+        
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.app_name == 'dashboard' and request.resolver_match.url_name != 'index' or request.path == '/dashboard/' %}active{% endif %}" href="{% url 'dashboard:index' %}">
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+
+        {% if is_admin %}
+        <!-- ADMIN NAVIGATION -->
+        <li class="sidebar-label">Administration</li>
+        <li class="nav-item">
+            <a class="nav-link {% if 'admin/users' in request.path %}active{% endif %}" href="{% url 'accounts:admin_user_list' %}">
+                <i class="bi bi-people-fill"></i>
+                <span>User Management</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.app_name == 'exams' and 'subjects' in request.path %}active{% endif %}" href="{% url 'exams:subject_list' %}">
+                <i class="bi bi-journals"></i>
+                <span>Subjects</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.app_name == 'exams' and 'subjects' not in request.path %}active{% endif %}" href="{% url 'exams:exam_list' %}">
+                <i class="bi bi-file-earmark-check-fill"></i>
+                <span>All Examinations</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'leaderboard' %}active{% endif %}" href="{% url 'results:leaderboard' %}">
+                <i class="bi bi-trophy-fill"></i>
+                <span>Leaderboard</span>
+            </a>
+        </li>
+
+        {% elif is_teacher %}
+        <!-- TEACHER NAVIGATION -->
+        <li class="sidebar-label">Academic Management</li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.app_name == 'exams' and request.resolver_match.url_name == 'exam_list' %}active{% endif %}" href="{% url 'exams:exam_list' %}">
+                <i class="bi bi-journal-text"></i>
+                <span>My Examinations</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'exam_create' %}active{% endif %}" href="{% url 'exams:exam_create' %}">
+                <i class="bi bi-plus-circle-fill"></i>
+                <span>Create Exam</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if 'subjects' in request.path %}active{% endif %}" href="{% url 'exams:subject_list' %}">
+                <i class="bi bi-collection-fill"></i>
+                <span>Subject Catalog</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'leaderboard' %}active{% endif %}" href="{% url 'results:leaderboard' %}">
+                <i class="bi bi-trophy-fill"></i>
+                <span>Student Rankings</span>
+            </a>
+        </li>
+
+        {% else %}
+        <!-- STUDENT NAVIGATION -->
+        <li class="sidebar-label">Examination Hall</li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.app_name == 'exams' %}active{% endif %}" href="{% url 'exams:exam_list' %}">
+                <i class="bi bi-pencil-square"></i>
+                <span>Available Exams</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'student_history' %}active{% endif %}" href="{% url 'results:student_history' %}">
+                <i class="bi bi-clock-history"></i>
+                <span>Exam History</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'leaderboard' %}active{% endif %}" href="{% url 'results:leaderboard' %}">
+                <i class="bi bi-trophy-fill"></i>
+                <span>Leaderboard</span>
+            </a>
+        </li>
+        {% endif %}
+
+        <li class="sidebar-label">Account</li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'accounts:profile' %}">
+                <i class="bi bi-person-circle"></i>
+                <span>My Profile</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-danger" href="{% url 'accounts:logout' %}">
+                <i class="bi bi-box-arrow-left text-danger"></i>
+                <span>Logout</span>
+            </a>
+        </li>
+    </ul>
+
+    <!-- Bottom info card -->
+    <div class="p-3 mx-2 mb-3 bg-dark rounded-3 border border-secondary border-opacity-25 text-center">
+        <div class="text-white small fw-bold mb-1">BTech CSE Capstone</div>
+        <div class="text-secondary fs-8">Django 5 + PostgreSQL</div>
+    </div>
+</aside>

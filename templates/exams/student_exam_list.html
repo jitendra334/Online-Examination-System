@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Available Examinations - Student Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Available Examinations</h2>
+            <p class="text-muted mb-0">Browse and launch proctored MCQ online tests across your enrolled subjects</p>
+        </div>
+        <a href="{% url 'results:student_history' %}" class="btn btn-outline-primary rounded-pill px-3.5">
+            <i class="bi bi-clock-history me-1"></i> Past Attempts History
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" value="{{ query }}" class="form-control border-start-0" placeholder="Search tests by title or syllabus keywords...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="subject" class="form-select">
+                        <option value="">All Subjects</option>
+                        {% for sub in subjects %}
+                        <option value="{{ sub.id }}" {% if selected_subject == sub.id|stringformat:"s" %}selected{% endif %}>{{ sub.name }} ({{ sub.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold">Filter</button>
+                    {% if query or selected_subject %}
+                    <a href="{% url 'exams:exam_list' %}" class="btn btn-light border">Reset</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Exams Grid -->
+    <div class="row g-3">
+        {% for exam in exams %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                <div class="card-header bg-light py-3 border-0 d-flex justify-content-between align-items-center">
+                    <span class="badge" style="background-color: {{ exam.subject.color_code }}; color: #fff;">
+                        <i class="bi {{ exam.subject.icon|default:'bi-journal' }} me-1"></i>{{ exam.subject.code }}
+                    </span>
+                    <span class="text-muted small fw-semibold"><i class="bi bi-clock me-1"></i>{{ exam.duration_minutes }} Mins</span>
+                </div>
+
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-2">{{ exam.title }}</h5>
+                        <p class="text-muted small mb-3">{{ exam.description|truncatechars:90 }}</p>
+
+                        <div class="p-3 bg-light rounded-3 mb-4">
+                            <div class="row g-2 text-muted small">
+                                <div class="col-6">
+                                    <i class="bi bi-patch-question me-1 text-primary"></i> <strong>{{ exam.question_count }}</strong> Questions
+                                </div>
+                                <div class="col-6">
+                                    <i class="bi bi-award me-1 text-warning"></i> <strong>{{ exam.total_marks }}</strong> Marks
+                                </div>
+                                <div class="col-6">
+                                    <i class="bi bi-check-circle me-1 text-success"></i> Pass: <strong>{{ exam.passing_marks }}</strong>
+                                </div>
+                                <div class="col-6">
+                                    {% if exam.negative_marking_enabled %}
+                                    <span class="text-danger"><i class="bi bi-dash-circle me-1"></i>-{{ exam.negative_marks_per_question }} Wrong</span>
+                                    {% else %}
+                                    <span class="text-success"><i class="bi bi-shield-check me-1"></i>No Penalty</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        {% if exam.has_attempted %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill">
+                                <i class="bi bi-check-all me-1"></i>Completed ({{ exam.latest_attempt.percentage }}%)
+                            </span>
+                            <small class="text-muted font-monospace">{{ exam.latest_attempt.final_score }} / {{ exam.latest_attempt.total_marks }}</small>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'results:result_detail' exam.latest_attempt.id %}" class="btn btn-outline-primary rounded-pill fw-semibold py-2">
+                                <i class="bi bi-eye me-1"></i> View Result & Solutions
+                            </a>
+                        </div>
+                        {% else %}
+                        <a href="{% url 'exams:exam_instructions' exam.id %}" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm">
+                            <i class="bi bi-play-circle-fill me-1"></i> View Instructions & Start
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-journal-check display-5 text-secondary d-block mb-3"></i>
+            <h5 class="text-muted">No examinations currently available</h5>
+            <p class="text-muted small">Please check back later when faculty publishes scheduled tests.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

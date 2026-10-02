@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Scorecard: {{ attempt.exam.title }} - ExamPortal{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 1200px;">
+    <!-- Top Action Breadcrumbs -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <span class="badge" style="background-color: {{ exam.subject.color_code }}; color: #fff;">{{ exam.subject.name }} ({{ exam.subject.code }})</span>
+            <h2 class="fw-bold mb-0 text-dark">Official Examination Scorecard</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'results:result_pdf' attempt.id %}" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
+                <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF Result
+            </a>
+            <a href="{% url 'dashboard:index' %}" class="btn btn-outline-dark rounded-pill px-3">
+                <i class="bi bi-house-door-fill me-1"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Hero Score Banner -->
+    <div class="card border-0 shadow-sm score-banner {% if attempt.is_passed %}score-banner-pass{% else %}score-banner-fail{% endif %} mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-white text-dark px-3 py-1.5 rounded-pill fw-bold">
+                        {% if attempt.is_passed %}<i class="bi bi-patch-check-fill text-success me-1"></i>PASSED{% else %}<i class="bi bi-x-circle-fill text-danger me-1"></i>FAILED{% endif %}
+                    </span>
+                    <span class="text-white text-opacity-75">• Completed on {{ attempt.submitted_at|date:"d M Y, h:i A" }}</span>
+                </div>
+                <h1 class="fw-bold text-white mb-1">{{ exam.title }}</h1>
+                <p class="text-white text-opacity-85 fs-6 mb-3">
+                    Candidate: <strong>{{ attempt.student.full_name }}</strong> • Dept: <strong>{{ attempt.student.department|default:'CSE' }}</strong> • Roll: <strong class="font-monospace">{{ attempt.student.student_id|default:attempt.student.username }}</strong>
+                </p>
+
+                <div class="d-flex flex-wrap gap-4 text-white text-opacity-90 pt-2 border-top border-white border-opacity-25">
+                    <div><small class="d-block text-opacity-75 text-white">Score Obtained</small><strong class="fs-5">{{ attempt.final_score }} / {{ attempt.total_marks }}</strong></div>
+                    <div><small class="d-block text-opacity-75 text-white">Accuracy Percentage</small><strong class="fs-5">{{ attempt.percentage }}%</strong></div>
+                    <div><small class="d-block text-opacity-75 text-white">Passing Threshold</small><strong class="fs-5">{{ exam.passing_marks }} Marks</strong></div>
+                    <div><small class="d-block text-opacity-75 text-white">Batch Rank</small><strong class="fs-5">#{{ rank }} of {{ total_participants }}</strong></div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 text-center text-lg-end mt-4 mt-lg-0">
+                <div class="d-inline-block bg-white bg-opacity-15 p-4 rounded-4 backdrop-blur border border-white border-opacity-25 text-center" style="min-width: 200px;">
+                    <div class="score-number mb-1">{{ attempt.percentage }}<small class="fs-4">%</small></div>
+                    <div class="text-uppercase fw-bold tracking-wide small text-white text-opacity-90">
+                        {% if attempt.is_passed %}Qualified{% else %}Needs Improvement{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Metrics & Accuracy Donut Chart -->
+    <div class="row g-4 mb-4">
+        <!-- Key Metrics Breakdown -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm p-4 h-100 rounded-4">
+                <h5 class="fw-bold mb-3 pb-2 border-bottom text-dark">
+                    <i class="bi bi-speedometer2 text-primary me-2"></i>Performance Breakdown
+                </h5>
+
+                <div class="row g-3">
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 bg-light rounded-3 text-center border">
+                            <div class="text-muted small mb-1">Total Questions</div>
+                            <h4 class="fw-bold text-dark mb-0">{{ attempt.total_questions }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 bg-light rounded-3 text-center border">
+                            <div class="text-primary small mb-1">Attempted</div>
+                            <h4 class="fw-bold text-primary mb-0">{{ attempt.attempted_questions }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 bg-success-subtle rounded-3 text-center border border-success-subtle">
+                            <div class="text-success small mb-1">Correct Answers</div>
+                            <h4 class="fw-bold text-success mb-0">{{ attempt.correct_answers }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 bg-danger-subtle rounded-3 text-center border border-danger-subtle">
+                            <div class="text-danger small mb-1">Wrong Answers</div>
+                            <h4 class="fw-bold text-danger mb-0">{{ attempt.wrong_answers }}</h4>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 bg-light rounded-3 text-center border">
+                            <div class="text-muted small mb-1">Unanswered</div>
+                            <h4 class="fw-bold text-secondary mb-0">{{ attempt.unanswered_questions }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 bg-light rounded-3 text-center border">
+                            <div class="text-danger small mb-1">Negative Marks</div>
+                            <h4 class="fw-bold text-danger mb-0">-{{ attempt.negative_marks }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 bg-light rounded-3 text-center border">
+                            <div class="text-muted small mb-1">Time Spent</div>
+                            <h4 class="fw-bold text-dark mb-0">{{ attempt.duration_formatted }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 bg-light rounded-3 text-center border">
+                            <div class="text-warning small mb-1">Marked Review</div>
+                            <h4 class="fw-bold text-warning mb-0">{{ attempt.marked_for_review_count }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accuracy Donut Chart -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm p-4 h-100 rounded-4 text-center">
+                <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom">
+                    <i class="bi bi-pie-chart-fill text-primary me-1"></i>Accuracy Distribution
+                </h6>
+                <div style="height: 180px;" class="d-flex justify-content-center align-items-center mb-2">
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+                <div class="d-flex justify-content-center gap-3 small fw-semibold mt-2">
+                    <span class="text-success"><i class="bi bi-circle-fill me-1"></i> Correct ({{ attempt.correct_answers }})</span>
+                    <span class="text-danger"><i class="bi bi-circle-fill me-1"></i> Wrong ({{ attempt.wrong_answers }})</span>
+                    <span class="text-secondary"><i class="bi bi-circle-fill me-1"></i> Skipped ({{ attempt.unanswered_questions }})</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question by Question Review & Solutions -->
+    {% if can_view_answers %}
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-patch-question-fill text-primary me-2"></i>Question-by-Question Solution Review
+            </h5>
+            <span class="badge bg-light text-dark border">Verified Answer Key</span>
+        </div>
+
+        <div class="card-body p-4">
+            {% for item in question_reviews %}
+            <div class="review-question-card p-4 {% if item.badge_class == 'success' %}correct{% elif item.badge_class == 'danger' %}incorrect{% else %}unanswered{% endif %} bg-white shadow-sm mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2.5">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-dark rounded-pill px-2.5">Q{{ item.number }}</span>
+                        <span class="badge bg-{{ item.badge_class }} px-2.5 py-1 rounded-pill">
+                            {{ item.status_label }}
+                        </span>
+                        {% if item.is_review %}
+                        <span class="badge bg-warning text-dark"><i class="bi bi-bookmark-star"></i> Marked for Review</span>
+                        {% endif %}
+                    </div>
+                    <span class="fw-bold {% if item.marks_obtained > 0 %}text-success{% elif item.marks_obtained < 0 %}text-danger{% else %}text-muted{% endif %}">
+                        {% if item.marks_obtained > 0 %}+{{ item.marks_obtained }}{% else %}{{ item.marks_obtained }}{% endif %} Marks
+                    </span>
+                </div>
+
+                <h5 class="fw-semibold text-dark mb-3">{{ item.question.question_text }}</h5>
+
+                <!-- Options -->
+                <div class="row g-2 mb-3">
+                    {% for opt in item.options %}
+                    <div class="col-md-6">
+                        <div class="review-option {% if opt.is_correct %}is-correct-answer{% elif item.selected_option == opt and not opt.is_correct %}is-user-wrong{% endif %}">
+                            <span class="badge {% if opt.is_correct %}bg-success text-white{% elif item.selected_option == opt %}bg-danger text-white{% else %}bg-light text-dark border{% endif %}">
+                                {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% else %}D{% endif %}
+                            </span>
+                            <span class="flex-grow-1">{{ opt.option_text }}</span>
+                            {% if opt.is_correct %}
+                            <span class="badge bg-success text-white"><i class="bi bi-check-lg me-1"></i>Correct</span>
+                            {% elif item.selected_option == opt %}
+                            <span class="badge bg-danger text-white"><i class="bi bi-x-lg me-1"></i>Your Answer</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Explanation Box -->
+                {% if item.question.explanation %}
+                <div class="p-3 bg-light rounded-3 text-muted small border-start border-3 border-info">
+                    <strong class="text-dark"><i class="bi bi-lightbulb-fill text-warning me-1"></i>Solution Explanation:</strong>
+                    <div class="mt-1">{{ item.question.explanation }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center py-4 rounded-4 shadow-sm mb-4">
+        <i class="bi bi-lock-fill display-6 text-primary d-block mb-2"></i>
+        <h5 class="fw-bold text-dark">Detailed Answer Key is Restricted</h5>
+        <p class="text-muted small mb-0">The examiner has disabled answer key display until all students have completed their submissions.</p>
+    </div>
+    {% endif %}
+
+    <!-- Bottom Action Bar -->
+    <div class="d-flex justify-content-center gap-3 pb-5">
+        <a href="{% url 'results:result_pdf' attempt.id %}" class="btn btn-danger btn-lg rounded-pill px-5 fw-bold shadow-sm">
+            <i class="bi bi-file-earmark-pdf-fill me-2"></i> Download Official PDF Scorecard
+        </a>
+        <a href="{% url 'results:exam_leaderboard' exam.id %}" class="btn btn-outline-primary btn-lg rounded-pill px-4 fw-bold">
+            <i class="bi bi-trophy-fill me-2"></i> View Exam Leaderboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctxAcc = document.getElementById('accuracyChart').getContext('2d');
+    new Chart(ctxAcc, {
+        type: 'doughnut',
+        data: {
+            labels: ['Correct', 'Wrong', 'Unanswered'],
+            datasets: [{
+                data: [{{ attempt.correct_answers }}, {{ attempt.wrong_answers }}, {{ attempt.unanswered_questions }}],
+                backgroundColor: ['#10b981', '#ef4444', '#94a3b8'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            cutout: '70%'
+        }
+    });
+});
+</script>
+{% endblock %}

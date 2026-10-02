@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - ExamPortal{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 850px;">
+    <div class="mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="fw-bold mb-1">{{ title }}</h2>
+            <p class="text-muted mb-0">Configure examination duration, passing metrics, negative marking, and randomization</p>
+        </div>
+        <a href="{% url 'exams:exam_list' %}" class="btn btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to Exams
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm p-4 rounded-4">
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold small text-dark">Examination Title *</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-dark">Subject / Course *</label>
+                    {{ form.subject }}
+                    {% if form.subject.errors %}<div class="text-danger small mt-1">{{ form.subject.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold small text-dark">Description & Syllabus Covered</label>
+                    {{ form.description }}
+                </div>
+
+                <!-- Timing & Marks -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-dark">Duration (Minutes) *</label>
+                    <div class="input-group">
+                        {{ form.duration_minutes }}
+                        <span class="input-group-text bg-light text-muted">mins</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-dark">Total Marks</label>
+                    {{ form.total_marks }}
+                    <small class="text-muted fs-8">0 = computed from questions</small>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-dark">Passing Marks Threshold *</label>
+                    {{ form.passing_marks }}
+                </div>
+
+                <!-- Negative Marking Section -->
+                <div class="col-12">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <div class="form-check form-switch mb-2">
+                            {{ form.negative_marking_enabled }}
+                            <label class="form-check-label fw-bold text-dark" for="{{ form.negative_marking_enabled.id_for_label }}">
+                                Enable Negative Marking for Incorrect Answers
+                            </label>
+                        </div>
+                        <div class="row g-2 align-items-center mt-1" id="negMarkSection">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold small text-muted mb-0">Penalty Marks Deducted Per Wrong Answer</label>
+                            </div>
+                            <div class="col-sm-6">
+                                {{ form.negative_marks_per_question }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Randomization & Security Controls -->
+                <div class="col-12">
+                    <h6 class="fw-bold text-dark mt-2 mb-2"><i class="bi bi-shield-check text-primary me-1"></i>Security & Randomization Options</h6>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                {{ form.random_question_order }}
+                                <label class="form-check-label small fw-semibold" for="{{ form.random_question_order.id_for_label }}">
+                                    Shuffle question order per student attempt
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                {{ form.random_option_order }}
+                                <label class="form-check-label small fw-semibold" for="{{ form.random_option_order.id_for_label }}">
+                                    Shuffle option order per question
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                {{ form.show_answers_after_submission }}
+                                <label class="form-check-label small fw-semibold" for="{{ form.show_answers_after_submission.id_for_label }}">
+                                    Show correct answers and explanations after test submission
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                {{ form.is_published }}
+                                <label class="form-check-label small fw-bold text-success" for="{{ form.is_published.id_for_label }}">
+                                    Publish Exam (Make visible to students)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="col-12">
+                    <label class="form-label fw-semibold small text-dark">Rules & Candidate Instructions</label>
+                    {{ form.instructions }}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <a href="{% url 'exams:exam_list' %}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
+                    <i class="bi bi-save me-1"></i> Save Examination
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

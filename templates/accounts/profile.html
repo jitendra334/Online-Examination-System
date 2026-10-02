@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile - Online Examination System{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">User Profile</h2>
+            <p class="text-muted mb-0">Manage your credentials, academic details, and personal preferences</p>
+        </div>
+        <a href="{% url 'accounts:password_change' %}" class="btn btn-outline-warning btn-sm rounded-pill">
+            <i class="bi bi-shield-lock me-1"></i> Change Password
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Profile Card -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm text-center p-4">
+                <div class="mb-3 mx-auto">
+                    {% if request.user.profile_picture %}
+                    <img src="{{ request.user.profile_picture.url }}" alt="{{ request.user.username }}" class="rounded-circle img-thumbnail shadow-sm" width="120" height="120" style="object-fit: cover;">
+                    {% else %}
+                    <div class="avatar-circle {% if is_admin %}bg-primary{% elif is_teacher %}bg-success{% else %}bg-dark{% endif %} mx-auto shadow-sm" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                        {{ request.user.username|make_list|first|upper }}
+                    </div>
+                    {% endif %}
+                </div>
+                <h4 class="fw-bold mb-1">{{ request.user.full_name }}</h4>
+                <p class="text-muted mb-2 font-monospace">@{{ request.user.username }}</p>
+                <span class="badge {% if is_admin %}bg-primary{% elif is_teacher %}bg-success{% else %}bg-info text-dark{% endif %} px-3 py-1.5 rounded-pill mb-3">
+                    {{ request.user.get_role_display }}
+                </span>
+
+                <hr class="my-3">
+
+                <div class="text-start">
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Department</small>
+                        <span class="fw-semibold">{{ request.user.department|default:'Not Specified' }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted d-block">{% if is_student %}Student Roll No{% else %}Employee / Faculty ID{% endif %}</small>
+                        <span class="fw-semibold font-monospace">{{ request.user.student_id|default:request.user.employee_id|default:'N/A' }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Email Address</small>
+                        <span class="fw-semibold">{{ request.user.email|default:'N/A' }}</span>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block">Member Since</small>
+                        <span class="fw-semibold">{{ request.user.date_joined|date:"d M Y" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Edit Form -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm p-4">
+                <h5 class="fw-bold mb-4 pb-2 border-bottom"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Profile Information</h5>
+                
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">First Name</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Last Name</label>
+                            {{ form.last_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Email Address</label>
+                            {{ form.email }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Phone Number</label>
+                            {{ form.phone_number }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Department</label>
+                            {{ form.department }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">{% if is_student %}Student / Roll ID{% else %}Employee ID{% endif %}</label>
+                            {% if is_student %}
+                                {{ form.student_id }}
+                            {% else %}
+                                {{ form.employee_id }}
+                            {% endif %}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold small">Short Bio / Summary</label>
+                            {{ form.bio }}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold small">Profile Picture</label>
+                            {{ form.profile_picture }}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-end">
+                        <button type="submit" class="btn btn-primary px-4 rounded-3 fw-bold">
+                            <i class="bi bi-save me-1"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

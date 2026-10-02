@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Faculty Dashboard - ExamPortal{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Top Welcome Banner -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Faculty Portal & Assessment Hub</h2>
+            <p class="text-muted mb-0">Welcome back, <strong>{{ request.user.full_name }}</strong> ({{ request.user.department|default:'Faculty' }})</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'exams:exam_create' %}" class="btn btn-success rounded-pill px-3.5 fw-bold d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-plus-circle-fill"></i> Create Examination
+            </a>
+            <a href="{% url 'exams:subject_list' %}" class="btn btn-outline-dark rounded-pill px-3">
+                <i class="bi bi-collection"></i> Subjects
+            </a>
+        </div>
+    </div>
+
+    <!-- Teacher KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-journal-text"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ total_exams }}</div>
+                        <div class="stat-label">Exams Authored</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-warning-subtle text-warning">
+                        <i class="bi bi-question-diamond-fill"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ total_questions }}</div>
+                        <div class="stat-label">Questions Added</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-purple-subtle text-primary" style="background-color: #f3e8ff; color: #7e22ce;">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ total_evaluations }}</div>
+                        <div class="stat-label">Student Attempts</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-patch-check-fill"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ pass_rate }}%</div>
+                        <div class="stat-label">Student Pass Rate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart & Performance Breakdown -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Exam Average Score % & Participation</h6>
+                    <span class="badge bg-light text-muted border">Class Performance</span>
+                </div>
+                <div class="card-body p-4">
+                    <div style="height: 250px;">
+                        <canvas id="teacherExamChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart-fill text-success me-2"></i>Pass / Fail Evaluation Ratio</h6>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-center align-items-center p-4">
+                    <div style="width: 200px; height: 200px;">
+                        <canvas id="teacherPassFailChart"></canvas>
+                    </div>
+                    <div class="d-flex justify-content-center gap-4 mt-3 small fw-semibold">
+                        <span class="text-success"><i class="bi bi-circle-fill me-1"></i> Passed</span>
+                        <span class="text-danger"><i class="bi bi-circle-fill me-1"></i> Failed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher's Exams Table & Recent Submissions -->
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-journal-check text-primary me-2"></i>My Examinations</h6>
+                    <a href="{% url 'exams:exam_list' %}" class="btn btn-sm btn-link text-decoration-none">View All &raquo;</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 table-custom">
+                        <thead>
+                            <tr>
+                                <th>Exam Title</th>
+                                <th>Subject</th>
+                                <th>Questions</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ex in my_exams %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ ex.title }}</div>
+                                    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ ex.duration_minutes }} mins • {{ ex.total_marks }} Marks</small>
+                                </td>
+                                <td>
+                                    <span class="badge" style="background-color: {{ ex.subject.color_code }}; color: #fff;">{{ ex.subject.code }}</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'questions:question_list' ex.id %}" class="badge bg-light text-dark border text-decoration-none">
+                                        <i class="bi bi-list-ol me-1"></i>{{ ex.question_count }} Questions
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if ex.is_published %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">Published</span>
+                                    {% else %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 rounded-pill">Draft</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'exams:exam_detail' ex.id %}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Manage Exam">
+                                            <i class="bi bi-gear-fill"></i>
+                                        </a>
+                                        <a href="{% url 'results:teacher_exam_results' ex.id %}" class="btn btn-outline-info" data-bs-toggle="tooltip" title="View Student Results">
+                                            <i class="bi bi-clipboard-data-fill"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">You have not created any exams yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-clock-history text-info me-2"></i>Latest Student Attempts</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for sub in recent_submissions %}
+                    <div class="list-group-item p-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold text-dark">{{ sub.student.full_name }}</div>
+                            <small class="text-muted">{{ sub.exam.title|truncatechars:24 }}</small>
+                            <div class="small text-muted font-monospace mt-1">{{ sub.submitted_at|date:"d M, H:i" }}</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="fw-bold fs-6 {% if sub.is_passed %}text-success{% else %}text-danger{% endif %}">{{ sub.percentage }}%</span>
+                            <div class="mt-1">
+                                <a href="{% url 'results:result_detail' sub.id %}" class="btn btn-sm btn-light border py-0 px-2 fs-7">Scorecard</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 text-center text-muted">No student submissions recorded yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Teacher Exam Chart
+    const teacherData = {{ teacher_chart_json|safe }};
+    const ctxTeacher = document.getElementById('teacherExamChart').getContext('2d');
+    new Chart(ctxTeacher, {
+        type: 'bar',
+        data: {
+            labels: teacherData.labels,
+            datasets: [
+                {
+                    label: 'Average Score (%)',
+                    data: teacherData.averages,
+                    backgroundColor: '#2563eb',
+                    borderRadius: 6,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Total Submissions',
+                    data: teacherData.attempts,
+                    backgroundColor: '#059669',
+                    borderRadius: 6,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    max: 100,
+                    beginAtZero: true,
+                    grid: { color: '#f1f5f9' },
+                    ticks: { callback: v => v + '%' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    beginAtZero: true
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 2. Pass / Fail Donut
+    const pfData = {{ teacher_pass_fail_json|safe }};
+    const ctxPF = document.getElementById('teacherPassFailChart').getContext('2d');
+    new Chart(ctxPF, {
+        type: 'doughnut',
+        data: {
+            labels: pfData.labels,
+            datasets: [{
+                data: pfData.data,
+                backgroundColor: pfData.colors,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            cutout: '70%'
+        }
+    });
+});
+</script>
+{% endblock %}

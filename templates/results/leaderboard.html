@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leaderboard & Academic Rankings - ExamPortal{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 1100px;">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="bi bi-trophy-fill text-warning me-2"></i>Academic Leaderboard</h2>
+            <p class="text-muted mb-0">Track top student performers, merit lists, and benchmark scores</p>
+        </div>
+        <div>
+            <!-- Exam Selector Dropdown -->
+            <select class="form-select rounded-pill px-3 py-2 fw-semibold" onchange="if(this.value) window.location.href=this.value;">
+                <option value="{% url 'results:leaderboard' %}" {% if not is_exam_specific %}selected{% endif %}>
+                    🏆 Overall Global Student Rankings
+                </option>
+                <optgroup label="Specific Exam Merit Lists">
+                    {% for ex in exams %}
+                    <option value="{% url 'results:exam_leaderboard' ex.id %}" {% if selected_exam and selected_exam.id == ex.id %}selected{% endif %}>
+                        {{ ex.title }} ({{ ex.subject.code }})
+                    </option>
+                    {% endfor %}
+                </optgroup>
+            </select>
+        </div>
+    </div>
+
+    <!-- Leaderboard Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-gradient-primary text-white py-3 border-0 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-white">
+                {% if is_exam_specific %}
+                <i class="bi bi-award me-1 text-warning"></i> Merit List for: {{ selected_exam.title }}
+                {% else %}
+                <i class="bi bi-trophy me-1 text-warning"></i> Top Academic Achievers (Global)
+                {% endif %}
+            </h5>
+            <span class="badge bg-white bg-opacity-20 text-white">{{ rankings|length }} Ranked Candidates</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 table-custom">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Rank</th>
+                        <th>Student</th>
+                        <th>Department</th>
+                        {% if is_exam_specific %}
+                        <th>Score</th>
+                        <th>Accuracy</th>
+                        <th>Time Taken</th>
+                        <th>Result</th>
+                        {% else %}
+                        <th>Exams Attempted</th>
+                        <th>Average Score</th>
+                        <th>Tests Passed</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in rankings %}
+                    <tr class="{% if item.rank == 1 %}bg-warning-subtle bg-opacity-25{% elif item.rank == 2 %}bg-light{% elif item.rank == 3 %}bg-light{% endif %}">
+                        <td>
+                            {% if item.rank == 1 %}
+                            <div class="avatar-circle bg-warning text-dark fw-bold shadow-sm" style="width: 34px; height: 34px;">🥇</div>
+                            {% elif item.rank == 2 %}
+                            <div class="avatar-circle bg-secondary text-white fw-bold shadow-sm" style="width: 34px; height: 34px;">🥈</div>
+                            {% elif item.rank == 3 %}
+                            <div class="avatar-circle text-white fw-bold shadow-sm" style="background-color: #b45309; width: 34px; height: 34px;">🥉</div>
+                            {% else %}
+                            <span class="fw-bold text-muted ps-2 fs-6">#{{ item.rank }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="avatar-circle bg-primary text-white" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                                    {{ item.student.username|make_list|first|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ item.student.full_name }}</div>
+                                    <small class="text-muted font-monospace">{{ item.student.student_id|default:item.student.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>{{ item.student.department|default:'CSE' }}</td>
+
+                        {% if is_exam_specific %}
+                        <td>
+                            <strong>{{ item.score }}</strong> / <small class="text-muted">{{ item.total_marks }}</small>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                                    <div class="progress-bar {% if item.percentage >= 75 %}bg-success{% elif item.percentage >= 50 %}bg-primary{% else %}bg-warning{% endif %}" style="width: {{ item.percentage }}%;"></div>
+                                </div>
+                                <span class="fw-bold small">{{ item.percentage }}%</span>
+                            </div>
+                        </td>
+                        <td class="text-muted small">{{ item.time_taken }}</td>
+                        <td>
+                            {% if item.is_passed %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">Passed</span>
+                            {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">Failed</span>
+                            {% endif %}
+                        </td>
+                        {% else %}
+                        <td>
+                            <span class="badge bg-light text-dark border px-2.5 py-1">{{ item.attempts_count }} Completed</span>
+                        </td>
+                        <td>
+                            <strong class="text-primary fs-6">{{ item.avg_percentage }}%</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill">
+                                <i class="bi bi-check-circle-fill me-1"></i>{{ item.passed_count }} Passed
+                            </span>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-trophy display-6 text-secondary d-block mb-2"></i>
+                            No ranked attempts recorded yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

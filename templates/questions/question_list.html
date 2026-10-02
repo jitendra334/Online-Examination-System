@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Questions for {{ exam.title }} - ExamPortal{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{% url 'exams:exam_detail' exam.id %}" class="text-decoration-none small text-muted">
+                    <i class="bi bi-arrow-left me-1"></i> Back to {{ exam.title }}
+                </a>
+            </div>
+            <h2 class="fw-bold mb-0 text-dark">Question Bank ({{ questions.count }} MCQs)</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'questions:question_bulk_upload' exam.id %}" class="btn btn-outline-dark rounded-pill px-3.5 fw-semibold">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i> Bulk Upload (CSV/JSON)
+            </a>
+            <a href="{% url 'questions:question_create' exam.id %}" class="btn btn-primary rounded-pill px-3.5 fw-bold d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-plus-circle-fill"></i> Add Question
+            </a>
+        </div>
+    </div>
+
+    <!-- Question Cards List -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="list-group list-group-flush">
+            {% for q in questions %}
+            <div class="list-group-item p-4">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-dark rounded-pill px-3 py-1.5 fs-7">Question #{{ forloop.counter }}</span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-pill">
+                            <i class="bi bi-award me-1"></i>{{ q.marks }} Marks
+                        </span>
+                        {% if q.negative_marks > 0 %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">
+                            -{{ q.negative_marks }} Penalty
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'questions:question_edit' exam.id q.id %}" class="btn btn-outline-secondary" title="Edit Question">
+                            <i class="bi bi-pencil-fill me-1"></i> Edit
+                        </a>
+                        <a href="{% url 'questions:question_delete' exam.id q.id %}" class="btn btn-outline-danger" title="Delete Question">
+                            <i class="bi bi-trash-fill"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <h5 class="fw-semibold text-dark mb-3" style="line-height: 1.5;">{{ q.question_text }}</h5>
+
+                <!-- 4 Options Grid -->
+                <div class="row g-2 mb-3">
+                    {% for opt in q.options.all %}
+                    <div class="col-md-6">
+                        <div class="p-2.5 rounded-3 border {% if opt.is_correct %}bg-success-subtle border-success text-success fw-bold{% else %}bg-light text-muted{% endif %} d-flex align-items-center gap-2.5">
+                            <span class="badge {% if opt.is_correct %}bg-success text-white{% else %}bg-secondary-subtle text-dark{% endif %} rounded-2" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;">
+                                {% if forloop.counter == 1 %}A{% elif forloop.counter == 2 %}B{% elif forloop.counter == 3 %}C{% else %}D{% endif %}
+                            </span>
+                            <span class="flex-grow-1">{{ opt.option_text }}</span>
+                            {% if opt.is_correct %}
+                            <span class="badge bg-success text-white"><i class="bi bi-check-lg me-1"></i>Correct Answer</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if q.explanation %}
+                <div class="p-2.5 bg-light rounded-3 text-muted small border-start border-3 border-primary">
+                    <strong class="text-dark"><i class="bi bi-info-circle me-1 text-primary"></i>Solution Explanation:</strong> {{ q.explanation }}
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="p-5 text-center text-muted">
+                <i class="bi bi-patch-question display-4 text-secondary d-block mb-3"></i>
+                <h5 class="text-dark">No questions found in this examination</h5>
+                <p class="small mb-4">You can add questions manually with 4 options or bulk import using CSV/JSON.</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{% url 'questions:question_create' exam.id %}" class="btn btn-primary rounded-pill px-4 fw-bold">
+                        <i class="bi bi-plus-circle-fill me-1"></i> Add Question
+                    </a>
+                    <a href="{% url 'questions:question_bulk_upload' exam.id %}" class="btn btn-outline-dark rounded-pill px-4">
+                        <i class="bi bi-upload me-1"></i> Bulk Upload
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

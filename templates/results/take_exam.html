@@ -1,0 +1,562 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Examination in Progress - {{ exam.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Full-screen examination hall layout */
+body {
+    background-color: #f1f5f9;
+    user-select: none; /* Prevent easy copying */
+}
+.exam-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+@media (max-width: 991.98px) {
+    .exam-layout-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block unauth_content %}
+<div class="min-vh-100 d-flex flex-column">
+    <!-- Top Distraction-Free Exam Header -->
+    <header class="exam-room-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon bg-primary text-white" style="width: 36px; height: 36px; border-radius: 8px;">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold text-white mb-0 text-truncate" style="max-width: 350px;">{{ exam.title }}</h5>
+                <small class="text-secondary font-monospace">{{ exam.subject.code }} • {{ request.user.full_name }} ({{ request.user.student_id|default:request.user.username }})</small>
+            </div>
+        </div>
+
+        <!-- Center Live Timer -->
+        <div class="d-flex align-items-center gap-3">
+            <div class="timer-box shadow-sm" id="timerContainer">
+                <i class="bi bi-stopwatch-fill fs-5"></i>
+                <span id="countdownDisplay">--:--:--</span>
+            </div>
+        </div>
+
+        <!-- Right Controls -->
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-light btn-sm rounded-pill d-none d-md-inline-flex align-items-center gap-1" onclick="toggleFullScreen()">
+                <i class="bi bi-arrows-fullscreen"></i> <span id="fullscreenText">Fullscreen</span>
+            </button>
+            <button class="btn btn-danger btn-sm rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#submitConfirmModal">
+                <i class="bi bi-send-check-fill me-1"></i> Submit Test
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Exam Workspace Layout -->
+    <div class="exam-layout-grid flex-grow-1">
+        
+        <!-- Left: Question Display Area -->
+        <div class="d-flex flex-column">
+            <div class="card border-0 shadow-sm rounded-4 flex-grow-1 d-flex flex-column justify-content-between p-4 bg-white">
+                <div>
+                    <!-- Question Header & Badges -->
+                    <div class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary fs-6 px-3 py-1.5 rounded-pill" id="questionNumberBadge">Question 1</span>
+                            <span class="badge bg-light text-dark border" id="questionMarksBadge">+1.0 Marks</span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle d-none" id="questionNegativeBadge">-0.25 Neg</span>
+                        </div>
+                        <div id="saveStatusIndicator" class="small text-muted d-flex align-items-center gap-1">
+                            <i class="bi bi-cloud-check text-success"></i> <span class="fs-8">Saved</span>
+                        </div>
+                    </div>
+
+                    <!-- Question Text -->
+                    <div class="mb-4">
+                        <h4 class="fw-semibold text-dark lh-base" id="questionTextDisplay">Loading question statement...</h4>
+                    </div>
+
+                    <!-- 4 Clickable Option Cards -->
+                    <div id="optionsContainer" class="mb-4">
+                        <!-- Options injected dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- Navigation & Action Buttons Bar -->
+                <div class="pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary rounded-pill px-3.5 fw-semibold" id="prevBtn" onclick="navigateQuestion(-1)">
+                            <i class="bi bi-arrow-left me-1"></i> Previous
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm rounded-pill px-3" id="clearBtn" onclick="clearSelectedAnswer()">
+                            <i class="bi bi-eraser me-1"></i> Clear Response
+                        </button>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-warning rounded-pill px-3.5 fw-semibold" id="reviewBtn" onclick="toggleMarkForReview()">
+                            <i class="bi bi-bookmark-star me-1"></i> <span id="reviewBtnText">Mark for Review</span>
+                        </button>
+                        <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="nextBtn" onclick="navigateQuestion(1)">
+                            Next <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Question Palette & Status Sidebar -->
+        <div class="d-flex flex-column gap-3">
+            <!-- Palette Card -->
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Question Palette</span>
+                    <span class="badge bg-light text-dark border font-monospace" id="paletteCounter">1 / {{ total_questions }}</span>
+                </h6>
+
+                <!-- Palette Buttons Grid -->
+                <div class="d-flex flex-wrap gap-1 justify-content-start mb-3" id="paletteGrid" style="max-height: 280px; overflow-y: auto;">
+                    <!-- Palette badges generated by JS -->
+                </div>
+
+                <!-- Palette Legend -->
+                <div class="p-2.5 bg-light rounded-3 small border">
+                    <div class="row g-2 fs-8 text-muted">
+                        <div class="col-6 d-flex align-items-center gap-1.5">
+                            <span class="question-palette-btn palette-answered" style="width: 18px; height: 18px; font-size: 8px;">✓</span>
+                            <span>Answered (<strong id="cntAnswered" class="text-success">0</strong>)</span>
+                        </div>
+                        <div class="col-6 d-flex align-items-center gap-1.5">
+                            <span class="question-palette-btn palette-unanswered" style="width: 18px; height: 18px; font-size: 8px;">!</span>
+                            <span>Unanswered (<strong id="cntUnanswered" class="text-danger">0</strong>)</span>
+                        </div>
+                        <div class="col-6 d-flex align-items-center gap-1.5">
+                            <span class="question-palette-btn palette-review" style="width: 18px; height: 18px; font-size: 8px;">★</span>
+                            <span>Review (<strong id="cntReview" class="text-primary">0</strong>)</span>
+                        </div>
+                        <div class="col-6 d-flex align-items-center gap-1.5">
+                            <span class="question-palette-btn palette-unvisited" style="width: 18px; height: 18px; font-size: 8px;">-</span>
+                            <span>Not Visited (<strong id="cntUnvisited">0</strong>)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Final Submit Trigger -->
+                <div class="d-grid mt-3">
+                    <button class="btn btn-success rounded-pill fw-bold py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#submitConfirmModal">
+                        <i class="bi bi-check2-circle me-1"></i> Finish & Submit Exam
+                    </button>
+                </div>
+            </div>
+
+            <!-- Student Profile Badge Card -->
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center">
+                <div class="d-flex align-items-center gap-2 text-start">
+                    <div class="avatar-circle bg-primary text-white" style="width: 40px; height: 40px;">
+                        {{ request.user.username|make_list|first|upper }}
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fw-bold text-dark text-truncate">{{ request.user.full_name }}</div>
+                        <small class="text-muted font-monospace">{{ request.user.student_id|default:request.user.username }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-gradient-primary text-white border-0 py-3">
+                <h5 class="modal-title fw-bold" id="submitModalLabel"><i class="bi bi-shield-check me-2"></i>Confirm Final Submission</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="stat-icon bg-success-subtle text-success mx-auto mb-3" style="width: 60px; height: 60px; font-size: 2rem;">
+                    <i class="bi bi-patch-check-fill"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Ready to submit your examination?</h5>
+                <p class="text-muted small mb-4">Once submitted, you will not be able to modify your answers. Your scorecard and performance metrics will be calculated immediately.</p>
+                
+                <div class="bg-light p-3 rounded-3 text-start mb-3 border">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Total Questions:</span>
+                        <strong class="text-dark">{{ total_questions }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-success">Answered Questions:</span>
+                        <strong class="text-success" id="modalAnsweredCount">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-danger">Unanswered Questions:</span>
+                        <strong class="text-danger" id="modalUnansweredCount">0</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light py-3 d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Return to Test</button>
+                <form method="post" action="{% url 'results:submit_exam' attempt.id %}" id="finalSubmitForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                        <i class="bi bi-send-check me-1"></i> Yes, Submit Now
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSRF helper form -->
+<input type="hidden" id="csrfTokenValue" value="{{ csrf_token }}">
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// --- Global Exam Engine State ---
+const questions = {{ questions_json|safe }};
+let currentIndex = 0;
+let remainingSeconds = {{ remaining_seconds }};
+const attemptId = {{ attempt.id }};
+const csrfToken = document.getElementById('csrfTokenValue').value;
+
+// Visited track
+const visitedSet = new Set([questions[0]?.id]);
+
+document.addEventListener('DOMContentLoaded', function() {
+    initTimer();
+    renderPalette();
+    renderCurrentQuestion();
+    updateLegendCounts();
+});
+
+// --- Countdown Timer Logic ---
+function initTimer() {
+    const timerDisplay = document.getElementById('countdownDisplay');
+    const timerBox = document.getElementById('timerContainer');
+
+    function updateTick() {
+        if (remainingSeconds <= 0) {
+            timerDisplay.textContent = "00:00:00";
+            timerBox.classList.add('timer-danger');
+            // Auto submit
+            document.getElementById('finalSubmitForm').submit();
+            return;
+        }
+
+        const hrs = Math.floor(remainingSeconds / 3600);
+        const mins = Math.floor((remainingSeconds % 3600) / 60);
+        const secs = remainingSeconds % 60;
+
+        timerDisplay.textContent = 
+            (hrs > 0 ? String(hrs).padStart(2, '0') + ":" : "") +
+            String(mins).padStart(2, '0') + ":" +
+            String(secs).padStart(2, '0');
+
+        // Warnings
+        if (remainingSeconds <= 60) {
+            timerBox.classList.remove('timer-warning');
+            timerBox.classList.add('timer-danger');
+        } else if (remainingSeconds <= 300) {
+            timerBox.classList.add('timer-warning');
+        }
+
+        remainingSeconds--;
+    }
+
+    updateTick();
+    setInterval(updateTick, 1000);
+}
+
+// --- Question Rendering ---
+function renderCurrentQuestion() {
+    if (!questions || questions.length === 0) return;
+    const q = questions[currentIndex];
+    visitedSet.add(q.id);
+
+    // Update Header Badges
+    document.getElementById('questionNumberBadge').textContent = `Question ${currentIndex + 1} of ${questions.length}`;
+    document.getElementById('questionMarksBadge').textContent = `+${q.marks} Marks`;
+    
+    const negBadge = document.getElementById('questionNegativeBadge');
+    if (q.negative_marks > 0) {
+        negBadge.textContent = `-${q.negative_marks} Neg`;
+        negBadge.classList.remove('d-none');
+    } else {
+        negBadge.classList.add('d-none');
+    }
+
+    // Question Statement
+    document.getElementById('questionTextDisplay').textContent = q.text;
+
+    // Render Options
+    const optContainer = document.getElementById('optionsContainer');
+    optContainer.innerHTML = '';
+
+    const letters = ['A', 'B', 'C', 'D'];
+    q.options.forEach((opt, idx) => {
+        const isSelected = (q.selected_option_id === opt.id);
+        const letter = letters[idx] || (idx + 1);
+
+        const card = document.createElement('div');
+        card.className = `option-card ${isSelected ? 'selected' : ''}`;
+        card.id = `option_card_${opt.id}`;
+        card.onclick = () => selectOption(q.id, opt.id);
+
+        card.innerHTML = `
+            <div class="option-radio-custom"></div>
+            <div class="option-badge">${letter}</div>
+            <div class="option-text fs-6 text-dark flex-grow-1">${escapeHtml(opt.text)}</div>
+        `;
+        optContainer.appendChild(card);
+    });
+
+    // Navigation buttons state
+    document.getElementById('prevBtn').disabled = (currentIndex === 0);
+    document.getElementById('nextBtn').innerHTML = (currentIndex === questions.length - 1) ? 'Finish <i class="bi bi-check-lg ms-1"></i>' : 'Next <i class="bi bi-arrow-right ms-1"></i>';
+
+    // Mark for review button state
+    const reviewBtn = document.getElementById('reviewBtn');
+    const reviewText = document.getElementById('reviewBtnText');
+    if (q.is_marked_for_review) {
+        reviewBtn.classList.remove('btn-outline-warning');
+        reviewBtn.classList.add('btn-warning');
+        reviewText.textContent = "Marked for Review";
+    } else {
+        reviewBtn.classList.remove('btn-warning');
+        reviewBtn.classList.add('btn-outline-warning');
+        reviewText.textContent = "Mark for Review";
+    }
+
+    renderPalette();
+    updateLegendCounts();
+}
+
+// --- Option Selection & Instant AJAX Save ---
+function selectOption(questionId, optionId) {
+    const q = questions[currentIndex];
+    q.selected_option_id = optionId;
+
+    // Visual selection
+    document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    const selectedEl = document.getElementById(`option_card_${optionId}`);
+    if (selectedEl) selectedEl.classList.add('selected');
+
+    showSaveIndicator('saving');
+
+    // Trigger AJAX
+    fetch(`/results/ajax-save/${attemptId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            question_id: questionId,
+            option_id: optionId,
+            is_marked_for_review: q.is_marked_for_review
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showSaveIndicator('saved');
+            if (data.remaining_seconds) remainingSeconds = data.remaining_seconds;
+        } else if (data.status === 'expired') {
+            document.getElementById('finalSubmitForm').submit();
+        }
+    })
+    .catch(err => {
+        console.error("Save error", err);
+        showSaveIndicator('error');
+    });
+
+    renderPalette();
+    updateLegendCounts();
+}
+
+// --- Clear Answer ---
+function clearSelectedAnswer() {
+    const q = questions[currentIndex];
+    q.selected_option_id = null;
+    document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+
+    showSaveIndicator('saving');
+
+    fetch(`/results/ajax-clear/${attemptId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            question_id: q.id,
+            is_marked_for_review: q.is_marked_for_review
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        showSaveIndicator('saved');
+        renderPalette();
+        updateLegendCounts();
+    })
+    .catch(err => showSaveIndicator('error'));
+}
+
+// --- Toggle Mark for Review ---
+function toggleMarkForReview() {
+    const q = questions[currentIndex];
+    q.is_marked_for_review = !q.is_marked_for_review;
+
+    showSaveIndicator('saving');
+
+    fetch(`/results/ajax-review/${attemptId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            question_id: q.id,
+            is_marked_for_review: q.is_marked_for_review
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        showSaveIndicator('saved');
+        renderCurrentQuestion();
+    })
+    .catch(err => showSaveIndicator('error'));
+}
+
+// --- Navigation ---
+function navigateQuestion(step) {
+    const newIdx = currentIndex + step;
+    if (newIdx >= 0 && newIdx < questions.length) {
+        currentIndex = newIdx;
+        renderCurrentQuestion();
+    } else if (newIdx >= questions.length) {
+        // Open submit confirmation
+        const modal = new bootstrap.Modal(document.getElementById('submitConfirmModal'));
+        modal.show();
+    }
+}
+
+function jumpToQuestion(idx) {
+    if (idx >= 0 && idx < questions.length) {
+        currentIndex = idx;
+        renderCurrentQuestion();
+    }
+}
+
+// --- Palette Grid Rendering ---
+function renderPalette() {
+    const grid = document.getElementById('paletteGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    questions.forEach((q, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'question-palette-btn';
+        btn.textContent = (idx + 1);
+        btn.onclick = () => jumpToQuestion(idx);
+
+        if (idx === currentIndex) {
+            btn.classList.add('palette-active');
+        }
+
+        const isVisited = visitedSet.has(q.id);
+        const isAnswered = (q.selected_option_id !== null && q.selected_option_id !== undefined);
+        const isReview = q.is_marked_for_review;
+
+        if (isAnswered && isReview) {
+            btn.classList.add('palette-answered-review');
+        } else if (isReview) {
+            btn.classList.add('palette-review');
+        } else if (isAnswered) {
+            btn.classList.add('palette-answered');
+        } else if (isVisited) {
+            btn.classList.add('palette-unanswered');
+        } else {
+            btn.classList.add('palette-unvisited');
+        }
+
+        grid.appendChild(btn);
+    });
+
+    document.getElementById('paletteCounter').textContent = `${currentIndex + 1} / ${questions.length}`;
+}
+
+// --- Realtime Legend Counter Update ---
+function updateLegendCounts() {
+    let answered = 0;
+    let review = 0;
+    let unanswered = 0;
+    let unvisited = 0;
+
+    questions.forEach(q => {
+        const isVisited = visitedSet.has(q.id);
+        const isAnswered = (q.selected_option_id !== null && q.selected_option_id !== undefined);
+        const isReview = q.is_marked_for_review;
+
+        if (isAnswered) answered++;
+        if (isReview) review++;
+        if (isVisited && !isAnswered) unanswered++;
+        if (!isVisited) unvisited++;
+    });
+
+    document.getElementById('cntAnswered').textContent = answered;
+    document.getElementById('cntUnanswered').textContent = unanswered;
+    document.getElementById('cntReview').textContent = review;
+    document.getElementById('cntUnvisited').textContent = unvisited;
+
+    // Modal counts
+    const modalAns = document.getElementById('modalAnsweredCount');
+    const modalUnans = document.getElementById('modalUnansweredCount');
+    if (modalAns) modalAns.textContent = answered;
+    if (modalUnans) modalUnans.textContent = questions.length - answered;
+}
+
+function showSaveIndicator(state) {
+    const el = document.getElementById('saveStatusIndicator');
+    if (!el) return;
+    if (state === 'saving') {
+        el.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" role="status"></span> <span class="fs-8">Saving...</span>';
+    } else if (state === 'saved') {
+        el.innerHTML = '<i class="bi bi-cloud-check text-success"></i> <span class="fs-8 text-success">Saved</span>';
+    } else {
+        el.innerHTML = '<i class="bi bi-cloud-slash text-danger"></i> <span class="fs-8 text-danger">Offline</span>';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Fullscreen Helper
+function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {});
+        document.getElementById('fullscreenText').textContent = "Exit Fullscreen";
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+            document.getElementById('fullscreenText').textContent = "Fullscreen";
+        }
+    }
+}
+</script>
+{% endblock %}

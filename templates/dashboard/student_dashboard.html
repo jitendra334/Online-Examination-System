@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Student Portal - ExamPortal{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Student Hero Welcome Card -->
+    <div class="card border-0 shadow-sm bg-gradient-primary text-white p-4 p-md-5 rounded-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-white bg-opacity-20 text-white mb-2 px-3 py-1 rounded-pill">
+                    <i class="bi bi-mortarboard-fill me-1"></i> Student Assessment Dashboard
+                </span>
+                <h2 class="display-6 fw-bold text-white mb-2">Welcome, {{ request.user.full_name }}!</h2>
+                <p class="text-white text-opacity-75 lead fs-6 mb-3">
+                    Dept: <strong>{{ request.user.department|default:'CSE' }}</strong> • Roll No: <strong class="font-monospace">{{ request.user.student_id|default:'21CS001' }}</strong>
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'exams:exam_list' %}" class="btn btn-warning text-dark fw-bold rounded-pill px-4 py-2">
+                        <i class="bi bi-pencil-square me-1"></i> Take an Examination
+                    </a>
+                    <a href="{% url 'results:student_history' %}" class="btn btn-outline-light rounded-pill px-4 py-2">
+                        <i class="bi bi-clock-history me-1"></i> Exam History
+                    </a>
+                    <a href="{% url 'results:leaderboard' %}" class="btn btn-outline-light rounded-pill px-4 py-2">
+                        <i class="bi bi-trophy-fill me-1"></i> Leaderboard
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center text-lg-end d-none d-lg-block">
+                <i class="bi bi-award-fill display-1 text-white text-opacity-50"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-check2-circle"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ total_attempted }}</div>
+                        <div class="stat-label">Exams Completed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-trophy-fill"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ pass_rate }}%</div>
+                        <div class="stat-label">Passing Rate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-info-subtle text-info">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ avg_percentage }}%</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-warning-subtle text-warning">
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ highest_score }}%</div>
+                        <div class="stat-label">Best Score</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Examinations Ready to Take -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Available Examinations</h5>
+            <a href="{% url 'exams:exam_list' %}" class="btn btn-sm btn-link text-decoration-none fw-semibold">View All Exams &raquo;</a>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                {% for ex in available_exams %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border h-100 rounded-3 shadow-none hover-shadow transition">
+                        <div class="card-body d-flex flex-column justify-content-between p-3.5">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge" style="background-color: {{ ex.subject.color_code }}; color: #fff;">{{ ex.subject.code }}</span>
+                                    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ ex.duration_minutes }} mins</small>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">{{ ex.title }}</h6>
+                                <p class="text-muted fs-8 mb-3">{{ ex.description|truncatechars:70 }}</p>
+                            </div>
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center small text-muted mb-3 border-top pt-2">
+                                    <span><i class="bi bi-patch-question me-1"></i>{{ ex.question_count }} Qs</span>
+                                    <span><i class="bi bi-award me-1"></i>{{ ex.total_marks }} Marks</span>
+                                    {% if ex.negative_marking_enabled %}
+                                    <span class="text-danger"><i class="bi bi-dash-circle me-1"></i>-{{ ex.negative_marks_per_question }}</span>
+                                    {% endif %}
+                                </div>
+                                <a href="{% url 'exams:exam_instructions' ex.id %}" class="btn btn-primary w-100 rounded-pill fw-semibold py-1.5">
+                                    <i class="bi bi-play-circle me-1"></i> Start Exam
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 py-4 text-center text-muted">
+                    <i class="bi bi-check-circle-fill text-success fs-1 d-block mb-2"></i>
+                    All available examinations have been completed or no tests are currently published.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts & Recent Submissions Row -->
+    <div class="row g-4">
+        <!-- Progress Chart -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-graph-up text-primary me-2"></i>Score Progression History (%)</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div style="height: 250px;">
+                        <canvas id="studentTimelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Completed Exam Scorecards -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-award text-success me-2"></i>Recent Completed Tests</h6>
+                    <a href="{% url 'results:student_history' %}" class="btn btn-sm btn-link text-decoration-none">All History &raquo;</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 table-custom">
+                        <thead>
+                            <tr>
+                                <th>Exam</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                                <th>Scorecard</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for att in recent_attempts %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark text-truncate" style="max-width: 160px;">{{ att.exam.title }}</div>
+                                    <small class="text-muted">{{ att.submitted_at|date:"d M Y" }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ att.final_score }}</strong> / {{ att.total_marks }}
+                                    <div class="text-muted fs-8">{{ att.percentage }}%</div>
+                                </td>
+                                <td>
+                                    {% if att.is_passed %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">Passed</span>
+                                    {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">Failed</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'results:result_detail' att.id %}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="View Scorecard">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'results:result_pdf' att.id %}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Download PDF Certificate">
+                                            <i class="bi bi-file-pdf"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No completed tests yet. Start an exam above!</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const perfData = {{ student_perf_chart_json|safe }};
+    const ctxTimeline = document.getElementById('studentTimelineChart').getContext('2d');
+    
+    if (perfData.labels && perfData.labels.length > 0) {
+        new Chart(ctxTimeline, {
+            type: 'line',
+            data: {
+                labels: perfData.labels,
+                datasets: [{
+                    label: 'Score Percentage (%)',
+                    data: perfData.scores,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: '#2563eb',
+                    pointRadius: 5,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { callback: v => v + '%' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    } else {
+        ctxTimeline.font = "14px Inter";
+        ctxTimeline.fillStyle = "#94a3b8";
+        ctxTimeline.textAlign = "center";
+        ctxTimeline.fillText("Complete your first examination to view performance trends.", 200, 120);
+    }
+});
+</script>
+{% endblock %}

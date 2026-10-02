@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Examination Instructions - {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0" style="max-width: 900px;">
+    <!-- Exam Title Banner -->
+    <div class="card border-0 shadow-sm bg-gradient-primary text-white p-4 rounded-4 mb-4">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <span class="badge bg-white bg-opacity-20 text-white mb-2 px-3 py-1 rounded-pill">
+                    {{ exam.subject.name }} ({{ exam.subject.code }})
+                </span>
+                <h2 class="fw-bold mb-1 text-white">{{ exam.title }}</h2>
+                <p class="text-white text-opacity-75 mb-0">{{ exam.description }}</p>
+            </div>
+            <div class="d-none d-md-block text-end">
+                <span class="badge bg-warning text-dark fs-6 px-3 py-2 rounded-pill font-monospace">
+                    <i class="bi bi-clock-fill me-1"></i> {{ exam.duration_minutes }} Minutes
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Parameters Summary Grid -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm p-3 text-center rounded-3 bg-white">
+                <small class="text-muted d-block mb-1">Duration</small>
+                <h4 class="fw-bold text-dark mb-0">{{ exam.duration_minutes }} <small class="fs-6 text-muted">mins</small></h4>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm p-3 text-center rounded-3 bg-white">
+                <small class="text-muted d-block mb-1">Total Questions</small>
+                <h4 class="fw-bold text-dark mb-0">{{ exam.question_count }} <small class="fs-6 text-muted">MCQs</small></h4>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm p-3 text-center rounded-3 bg-white">
+                <small class="text-muted d-block mb-1">Total Marks</small>
+                <h4 class="fw-bold text-dark mb-0">{{ exam.total_marks }} <small class="fs-6 text-muted">pts</small></h4>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm p-3 text-center rounded-3 bg-white">
+                <small class="text-muted d-block mb-1">Negative Marking</small>
+                {% if exam.negative_marking_enabled %}
+                <h4 class="fw-bold text-danger mb-0">-{{ exam.negative_marks_per_question }}</h4>
+                {% else %}
+                <h4 class="fw-bold text-success mb-0">None</h4>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Candidate Rules & Code of Conduct -->
+    <div class="card border-0 shadow-sm p-4 rounded-4 mb-4">
+        <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">
+            <i class="bi bi-card-checklist text-primary me-2"></i>Instructions & Code of Conduct
+        </h5>
+
+        <div class="alert alert-warning d-flex align-items-center mb-3">
+            <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+            <div>
+                <strong>Important:</strong> Once you click <em>"Start Examination Now"</em>, the timer will start immediately and cannot be paused.
+            </div>
+        </div>
+
+        <ul class="list-group list-group-flush mb-4">
+            <li class="list-group-item px-0 py-2.5 d-flex gap-2.5">
+                <i class="bi bi-check2-circle text-success fs-5"></i>
+                <div><strong>MCQ Format:</strong> All questions are multiple-choice with 4 options. Exactly one option is correct.</div>
+            </li>
+            <li class="list-group-item px-0 py-2.5 d-flex gap-2.5">
+                <i class="bi bi-palette-fill text-primary fs-5"></i>
+                <div><strong>Question Palette:</strong> You can jump directly to any question using the numeric question palette on the right sidebar. Palette color indicators reflect question status: Answered (Green), Not Visited (Gray), Unanswered (Red), Marked for Review (Purple).</div>
+            </li>
+            <li class="list-group-item px-0 py-2.5 d-flex gap-2.5">
+                <i class="bi bi-cloud-arrow-up-fill text-info fs-5"></i>
+                <div><strong>Instant Auto-Save:</strong> Your answers are saved automatically via AJAX every time you select an option. You do not need to worry about losing unsaved work.</div>
+            </li>
+            <li class="list-group-item px-0 py-2.5 d-flex gap-2.5">
+                <i class="bi bi-hourglass-split text-danger fs-5"></i>
+                <div><strong>Automatic Submission:</strong> When the countdown timer reaches 00:00:00, your exam will be automatically submitted and evaluated on the server.</div>
+            </li>
+            <li class="list-group-item px-0 py-2.5 d-flex gap-2.5">
+                <i class="bi bi-shield-x text-danger fs-5"></i>
+                <div><strong>Anti-Cheating Policy:</strong> Switching browser tabs, minimizing the exam window, or attempting to open developer tools may be flagged as malpractice.</div>
+            </li>
+        </ul>
+
+        {% if exam.instructions %}
+        <div class="bg-light p-3 rounded-3 mb-4 border">
+            <div class="fw-bold small text-dark mb-1">Additional Faculty Guidelines:</div>
+            <div class="text-muted small" style="white-space: pre-line;">{{ exam.instructions }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Start Form or Action -->
+        {% if can_attempt %}
+        <div class="text-center pt-2">
+            <div class="form-check d-inline-block text-start mb-3">
+                <input class="form-check-input" type="checkbox" id="agreeCheckbox" onchange="toggleStartBtn(this)">
+                <label class="form-check-label fw-semibold text-dark small" for="agreeCheckbox">
+                    I have read, understood, and agree to strictly abide by all the examination rules and instructions.
+                </label>
+            </div>
+            <div>
+                <a href="{% url 'results:start_exam' exam.id %}" id="startExamBtn" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm disabled">
+                    <i class="bi bi-play-circle-fill me-1"></i> Start Examination Now
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-danger text-center mb-0">
+            <i class="bi bi-x-circle-fill me-1"></i> {{ reason }}
+            <div class="mt-2">
+                <a href="{% url 'exams:exam_list' %}" class="btn btn-outline-danger btn-sm rounded-pill px-3">Back to Available Exams</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function toggleStartBtn(checkbox) {
+    const btn = document.getElementById('startExamBtn');
+    if (checkbox.checked) {
+        btn.classList.remove('disabled');
+    } else {
+        btn.classList.add('disabled');
+    }
+}
+</script>
+{% endblock %}

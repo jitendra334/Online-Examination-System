@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Student Performance & Results: {{ exam.title }} - ExamPortal{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="small text-muted mb-1">
+                <a href="{% url 'exams:exam_detail' exam.id %}" class="text-decoration-none">
+                    <i class="bi bi-arrow-left me-1"></i> Back to {{ exam.title }}
+                </a>
+            </div>
+            <h2 class="fw-bold mb-0 text-dark">Student Results & Marks Roster</h2>
+            <small class="text-muted">{{ exam.subject.name }} ({{ exam.subject.code }}) • {{ total_attempts }} Submissions</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'results:export_results_csv' exam.id %}" class="btn btn-success rounded-pill px-3.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm">
+                <i class="bi bi-file-earmark-spreadsheet-fill"></i> Export Marksheet (CSV)
+            </a>
+            <a href="{% url 'results:exam_leaderboard' exam.id %}" class="btn btn-outline-warning text-dark rounded-pill px-3 fw-semibold">
+                <i class="bi bi-trophy-fill text-warning me-1"></i> Leaderboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Exam Performance Metrics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ total_attempts }}</div>
+                        <div class="stat-label">Total Submissions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-patch-check-fill"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ pass_rate }}%</div>
+                        <div class="stat-label">Pass Rate ({{ passed_attempts }} passed)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-info-subtle text-info">
+                        <i class="bi bi-calculator"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ avg_score }}</div>
+                        <div class="stat-label">Average Score (out of {{ exam.total_marks }})</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card p-3 border-0 bg-white shadow-sm h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon bg-warning-subtle text-warning">
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">{{ max_score }}</div>
+                        <div class="stat-label">Highest Score Achieved</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="d-flex gap-2 mb-3">
+        <a href="{% url 'results:teacher_exam_results' exam.id %}" class="btn btn-sm {% if not status_filter %}btn-dark{% else %}btn-light border{% endif %} rounded-pill px-3">
+            All Submissions ({{ total_attempts }})
+        </a>
+        <a href="{% url 'results:teacher_exam_results' exam.id %}?status=passed" class="btn btn-sm {% if status_filter == 'passed' %}btn-success{% else %}btn-light border{% endif %} rounded-pill px-3">
+            Passed Candidates ({{ passed_attempts }})
+        </a>
+        <a href="{% url 'results:teacher_exam_results' exam.id %}?status=failed" class="btn btn-sm {% if status_filter == 'failed' %}btn-danger{% else %}btn-light border{% endif %} rounded-pill px-3">
+            Failed Candidates
+        </a>
+    </div>
+
+    <!-- Student Attempts Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 table-custom">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">Rank</th>
+                        <th>Student Name & ID</th>
+                        <th>Department</th>
+                        <th>Attempted</th>
+                        <th>Correct / Wrong</th>
+                        <th>Final Score</th>
+                        <th>Percentage</th>
+                        <th>Status</th>
+                        <th class="text-end">Scorecard</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for att in attempts %}
+                    <tr>
+                        <td>
+                            <span class="badge {% if forloop.counter == 1 %}bg-warning text-dark{% elif forloop.counter == 2 %}bg-secondary text-white{% elif forloop.counter == 3 %}text-white" style="background-color: #b45309;{% else %}bg-light text-dark border{% endif %} font-monospace">
+                                #{{ forloop.counter }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ att.student.full_name }}</div>
+                            <small class="text-muted font-monospace">{{ att.student.student_id|default:att.student.username }} • {{ att.student.email }}</small>
+                        </td>
+                        <td>{{ att.student.department|default:'CSE' }}</td>
+                        <td>{{ att.attempted_questions }} / {{ att.total_questions }}</td>
+                        <td>
+                            <span class="text-success fw-bold">{{ att.correct_answers }}</span> / <span class="text-danger fw-bold">{{ att.wrong_answers }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ att.final_score }}</strong> / {{ att.total_marks }}
+                        </td>
+                        <td>
+                            <span class="fw-bold fs-7 {% if att.percentage >= 60 %}text-success{% elif att.percentage >= 40 %}text-primary{% else %}text-danger{% endif %}">
+                                {{ att.percentage }}%
+                            </span>
+                        </td>
+                        <td>
+                            {% if att.is_passed %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">Passed</span>
+                            {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill">Failed</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'results:result_detail' att.id %}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Inspect Scorecard">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                                <a href="{% url 'results:result_pdf' att.id %}" class="btn btn-outline-danger" data-bs-toggle="tooltip" title="Download PDF">
+                                    <i class="bi bi-file-pdf"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-people display-6 text-secondary d-block mb-2"></i>
+                            No student submissions found matching the criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% load static %}
+<header class="top-navbar d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-light d-lg-none p-1" id="sidebarToggle" type="button">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+        <span class="badge {% if is_admin %}bg-primary{% elif is_teacher %}bg-success{% else %}bg-info text-dark{% endif %} px-2.5 py-1.5 rounded-pill">
+            <i class="bi {% if is_admin %}bi-shield-check{% elif is_teacher %}bi-person-workspace{% else %}bi-mortarboard{% endif %} me-1"></i>
+            {{ request.user.get_role_display }}
+        </span>
+    </div>
+
+    <!-- Right User Profile Controls -->
+    <div class="d-flex align-items-center gap-3">
+        {% if is_student %}
+        <a href="{% url 'exams:exam_list' %}" class="btn btn-outline-primary btn-sm rounded-pill d-none d-sm-inline-flex align-items-center gap-1">
+            <i class="bi bi-pencil-square"></i> Available Exams
+        </a>
+        {% elif is_teacher or is_admin %}
+        <a href="{% url 'exams:exam_create' %}" class="btn btn-primary btn-sm rounded-pill d-none d-sm-inline-flex align-items-center gap-1">
+            <i class="bi bi-plus-circle"></i> Create Exam
+        </a>
+        {% endif %}
+
+        <!-- User Dropdown -->
+        <div class="dropdown">
+            <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle gap-2" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                {% if request.user.profile_picture %}
+                <img src="{{ request.user.profile_picture.url }}" alt="{{ request.user.username }}" class="rounded-circle" width="36" height="36" style="object-fit: cover;">
+                {% else %}
+                <div class="avatar-circle {% if is_admin %}bg-primary{% elif is_teacher %}bg-success{% else %}bg-dark{% endif %}">
+                    {{ request.user.username|make_list|first|upper }}
+                </div>
+                {% endif %}
+                <div class="d-none d-md-block text-start">
+                    <div class="fw-bold fs-7 lh-1 text-dark">{{ request.user.full_name }}</div>
+                    <small class="text-muted fs-8">{{ request.user.email|default:request.user.username }}</small>
+                </div>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 py-2" aria-labelledby="userDropdown" style="min-width: 220px; border-radius: 12px;">
+                <li class="px-3 py-2 border-bottom mb-1">
+                    <div class="fw-bold">{{ request.user.full_name }}</div>
+                    <small class="text-muted">{{ request.user.get_role_display }} • {{ request.user.department|default:'CSE' }}</small>
+                </li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{% url 'accounts:profile' %}">
+                        <i class="bi bi-person text-primary"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{% url 'accounts:password_change' %}">
+                        <i class="bi bi-shield-lock text-warning"></i> Change Password
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" href="{% url 'accounts:logout' %}">
+                        <i class="bi bi-box-arrow-right"></i> Sign Out
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</header>

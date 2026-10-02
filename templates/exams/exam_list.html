@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Examinations Catalog - ExamPortal{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Examinations Management</h2>
+            <p class="text-muted mb-0">Create, configure, publish, and evaluate tests across academic subjects</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'exams:exam_create' %}" class="btn btn-primary rounded-pill px-3.5 fw-bold d-inline-flex align-items-center gap-2">
+                <i class="bi bi-plus-circle-fill"></i> Create New Exam
+            </a>
+            <a href="{% url 'exams:subject_list' %}" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-collection"></i> Subjects
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" value="{{ query }}" class="form-control border-start-0" placeholder="Search exams by title or subject...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="subject" class="form-select">
+                        <option value="">All Academic Subjects</option>
+                        {% for sub in subjects %}
+                        <option value="{{ sub.id }}" {% if selected_subject == sub.id|stringformat:"s" %}selected{% endif %}>{{ sub.name }} ({{ sub.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100 fw-semibold">Filter</button>
+                    {% if query or selected_subject or status_filter %}
+                    <a href="{% url 'exams:exam_list' %}" class="btn btn-light border">Reset</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Exams Cards Grid -->
+    <div class="row g-3">
+        {% for exam in exams %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 rounded-3">
+                <div class="card-body d-flex flex-column justify-content-between p-4">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge" style="background-color: {{ exam.subject.color_code }}; color: #fff;">
+                                <i class="bi {{ exam.subject.icon|default:'bi-journal' }} me-1"></i>{{ exam.subject.code }}
+                            </span>
+                            {% if exam.is_published %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                                <i class="bi bi-broadcast me-1"></i>Published
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 rounded-pill">
+                                <i class="bi bi-file-earmark-lock me-1"></i>Draft
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <h5 class="fw-bold text-dark mb-2">{{ exam.title }}</h5>
+                        <p class="text-muted small mb-3">{{ exam.description|truncatechars:90 }}</p>
+
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <div class="row g-2 text-muted small">
+                                <div class="col-6">
+                                    <i class="bi bi-clock me-1 text-primary"></i> <strong>{{ exam.duration_minutes }}</strong> Mins
+                                </div>
+                                <div class="col-6">
+                                    <i class="bi bi-patch-question me-1 text-success"></i> <strong>{{ exam.question_count }}</strong> Questions
+                                </div>
+                                <div class="col-6">
+                                    <i class="bi bi-award me-1 text-warning"></i> <strong>{{ exam.total_marks }}</strong> Total Marks
+                                </div>
+                                <div class="col-6">
+                                    {% if exam.negative_marking_enabled %}
+                                    <span class="text-danger"><i class="bi bi-dash-circle me-1"></i>-{{ exam.negative_marks_per_question }} Neg</span>
+                                    {% else %}
+                                    <span class="text-muted"><i class="bi bi-check-circle me-1"></i>No Neg</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                            <small class="text-muted">By {{ exam.created_by.first_name|default:exam.created_by.username }}</small>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'questions:question_list' exam.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5" data-bs-toggle="tooltip" title="Questions">
+                                    <i class="bi bi-list-ol"></i> Qs
+                                </a>
+                                <a href="{% url 'exams:exam_detail' exam.id %}" class="btn btn-sm btn-primary rounded-pill px-3">
+                                    Manage &raquo;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-journal-x display-5 text-secondary d-block mb-3"></i>
+            <h5 class="text-muted">No examinations found</h5>
+            <p class="text-muted small">Click "Create New Exam" to launch your first assessment test.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if exams.has_other_pages %}
+    <div class="d-flex justify-content-center mt-4">
+        <ul class="pagination pagination-sm">
+            {% if exams.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ exams.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">&laquo;</a></li>
+            {% endif %}
+            {% for p in exams.paginator.page_range %}
+            <li class="page-item {% if exams.number == p %}active{% endif %}">
+                <a class="page-link" href="?page={{ p }}{% if query %}&q={{ query }}{% endif %}">{{ p }}</a>
+            </li>
+            {% endfor %}
+            {% if exams.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ exams.next_page_number }}{% if query %}&q={{ query }}{% endif %}">&raquo;</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
